@@ -32,12 +32,7 @@ dim_date = spark.read.jdbc(PG_URL, "dim_date", properties=PG_PROPS)
 
 fact.cache()
 
-# -------------------------------------------------------
-# 1. dm_product_sales — Витрина продаж по продуктам
-# - Топ-10 самых продаваемых продуктов (rank <= 10)
-# - Общая выручка по категориям продуктов
-# - Средний рейтинг и количество отзывов для каждого продукта
-# -------------------------------------------------------
+# dm_product_sales
 sales_per_product = fact.groupBy("product_id").agg(
     _sum("quantity").alias("total_quantity"),
     _sum("total_price").alias("total_revenue")
@@ -55,7 +50,6 @@ product_agg = dim_product \
         col("total_revenue")
     )
 
-# Топ-10 по количеству продаж
 w = Window.orderBy(desc("total_quantity"))
 dm_product_sales = product_agg \
     .withColumn("sales_rank", rank().over(w)) \
@@ -65,12 +59,7 @@ dm_product_sales = product_agg \
     ) \
     .orderBy(desc("total_quantity"))
 
-# -------------------------------------------------------
-# 2. dm_customer_sales — Витрина продаж по клиентам
-# - Топ-10 клиентов с наибольшей общей суммой покупок (rank <= 10)
-# - Распределение клиентов по странам
-# - Средний чек для каждого клиента
-# -------------------------------------------------------
+# dm_customer_sales
 customer_agg = fact \
     .join(dim_customer, fact.customer_id == dim_customer.id) \
     .groupBy(
@@ -93,12 +82,7 @@ dm_customer_sales = customer_agg \
     ) \
     .orderBy(desc("total_spent"))
 
-# -------------------------------------------------------
-# 3. dm_time_sales — Витрина продаж по времени
-# - Месячные и годовые тренды продаж
-# - Сравнение выручки за разные периоды (prev_month_revenue)
-# - Средний размер заказа по месяцам
-# -------------------------------------------------------
+# dm_time_sales
 time_agg = fact \
     .join(dim_date, fact.date_id == dim_date.id) \
     .groupBy("year", "month", "quarter") \
@@ -119,12 +103,7 @@ dm_time_sales = time_agg \
     ) \
     .orderBy("year", "month")
 
-# -------------------------------------------------------
-# 4. dm_store_sales — Витрина продаж по магазинам
-# - Топ-5 магазинов с наибольшей выручкой (rank <= 5)
-# - Распределение продаж по городам и странам
-# - Средний чек для каждого магазина
-# -------------------------------------------------------
+# dm_store_sales
 store_agg = fact \
     .join(dim_store, fact.store_id == dim_store.id) \
     .groupBy(
@@ -150,12 +129,7 @@ dm_store_sales = store_agg \
     ) \
     .orderBy(desc("total_revenue"))
 
-# -------------------------------------------------------
-# 5. dm_supplier_sales — Витрина продаж по поставщикам
-# - Топ-5 поставщиков с наибольшей выручкой (rank <= 5)
-# - Средняя цена товаров от каждого поставщика
-# - Распределение продаж по странам поставщиков
-# -------------------------------------------------------
+# dm_supplier_sales
 supplier_agg = fact \
     .join(dim_supplier, fact.supplier_id == dim_supplier.id) \
     .join(dim_product, fact.product_id == dim_product.id) \
@@ -178,12 +152,7 @@ dm_supplier_sales = supplier_agg \
     ) \
     .orderBy(desc("total_revenue"))
 
-# -------------------------------------------------------
-# 6. dm_product_quality — Витрина качества продукции
-# - Продукты с наивысшим и наименьшим рейтингом (rank)
-# - Корреляция между рейтингом и объемом продаж (rating + total_sold)
-# - Продукты с наибольшим количеством отзывов (reviews_rank)
-# -------------------------------------------------------
+# dm_product_quality
 sales_vol = fact.groupBy("product_id").agg(
     _sum("quantity").alias("total_sold")
 )
@@ -207,9 +176,6 @@ dm_product_quality = dim_product \
     .withColumn("reviews_rank", rank().over(w_reviews)) \
     .orderBy(desc("rating"))
 
-# -------------------------------------------------------
-# Запись 6 витрин в ClickHouse
-# -------------------------------------------------------
 reports = {
     "dm_product_sales":   dm_product_sales,
     "dm_customer_sales":  dm_customer_sales,
