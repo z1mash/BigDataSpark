@@ -1,0 +1,15 @@
+# JAR драйверы (скачиваются через download_jars.ps1)
+spark-jobs/jars/*.jar
+
+# Docker volumes
+postgres_data/
+clickhouse_data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
