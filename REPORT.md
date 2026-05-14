@@ -132,7 +132,7 @@ docker exec lab2_spark_master /opt/spark/bin/spark-submit `
 ![Топ-10 продуктов](img/top10_products.png)
 
 ```sql
-SELECT * FROM dm_product_sales ORDER BY total_quantity DESC LIMIT 10;
+SELECT product_id, name, category, total_quantity, total_revenue, rating, reviews, sales_rank, is_top10, category_revenue FROM dm_product_sales ORDER BY sales_rank LIMIT 10
 ```
 
 ---
